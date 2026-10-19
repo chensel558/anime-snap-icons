@@ -463,9 +463,38 @@ function Factory.Build(def: any, opts: any?): Model
 	local r = Config.Rarities[def.rarity or "Common"]
 	local rarityI = r and r.i or 1
 	local m = buildRig(def, L)
-	addFace(m, L, def)
-	addHair(m, def, L)
-	addOutfit(m, def, L, rarityI)
+	local store = ReplicatedStorage:FindFirstChild("CharacterMeshes")
+	local src = store and def.id and store:FindFirstChild(def.id)
+	if src and not o.boxy then
+		-- AI-generated mesh body on an invisible R6 rig: Humanoid movement, tags and auras keep working.
+		for _, p in ipairs(m:GetChildren()) do if p:IsA("BasePart") then p.Transparency = 1 end end
+		local body = src:Clone()
+		body.Name = "MeshBody"
+		local main = body:IsA("BasePart") and body or body:FindFirstChildWhichIsA("BasePart", true)
+		if body:IsA("Model") then
+			local _, sz = body:GetBoundingBox()
+			body:ScaleTo(body:GetScale() * (5.4 / math.max(sz.Y, 0.1)))
+		end
+		local hrp = m:FindFirstChild("HumanoidRootPart") :: BasePart
+		local cf, sz = (body :: any):GetBoundingBox()
+		-- feet on the ground (hrp centre is 3 studs above it), centred on the rig, facing -Z like the rig
+		body:PivotTo(body:GetPivot() + (hrp.Position - Vector3.new(0, 3 - sz.Y / 2, 0) - cf.Position))
+		for _, x in ipairs(body:GetDescendants()) do
+			if x:IsA("BasePart") then x.Anchored = false; x.CanCollide = false; x.CanQuery = false; x.CanTouch = false; x.Massless = true end
+		end
+		for _, x in ipairs(body:GetDescendants()) do
+			if x:IsA("BasePart") and x ~= main then local w = Instance.new("WeldConstraint"); w.Part0 = main; w.Part1 = x; w.Parent = x end
+		end
+		local j = Instance.new("Motor6D"); j.Name = "MeshJoint"; j.Part0 = hrp; j.Part1 = main
+		j.C0 = hrp.CFrame:ToObjectSpace(main.CFrame); j.Parent = hrp
+		body.Parent = m
+		m:SetAttribute("MeshChar", true)
+		m:SetAttribute("HairTop", 0.25)
+	else
+		addFace(m, L, def)
+		addHair(m, def, L)
+		addOutfit(m, def, L, rarityI)
+	end
 	if not o.noAura and not o.portrait then Factory.Aura(m, def.rarity or "Common") end
 	m.Name = def.id or "Character"
 	local hum = m:FindFirstChildOfClass("Humanoid") :: Humanoid
