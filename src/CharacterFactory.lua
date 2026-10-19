@@ -215,6 +215,7 @@ local function addHair(m: Model, def: any, L: any)
 	end
 	local pool = L.female and FEMALE_STYLES or MALE_STYLES
 	local style = (L.arch == "fighter" and not L.female) and "SpikyTall" or pool[hashN(def.id or "", 4) % #pool + 1]
+	m:SetAttribute("HairTop", (style == "SpikyTall" and 1.9) or (style == "Spiky" and 1.3) or (style == "Bun" and 0.9) or 0.45)
 	if style == "Spiky" or style == "SpikyTall" then
 		local len = style == "SpikyTall" and 1.7 or 1.1
 		for i = 0, 7 do
@@ -247,7 +248,8 @@ local function addHair(m: Model, def: any, L: any)
 			attach(head, "HairTie", Vector3.new(0.3, 0.3, 0.3), CFrame.new(s * (HX + 0.2), HY - 0.15, -0.05), L.second, {parent = folder, shape = Enum.PartType.Ball})
 		end
 	elseif style == "Bob" then
-		piece(Vector3.new(HEAD.X + 0.32, 1.1, HEAD.Z + 0.3), CFrame.new(0, -0.05, 0.12))
+		piece(Vector3.new(HEAD.X + 0.32, 1.15, HEAD.Z * 0.62), CFrame.new(0, -0.1, HZ * 0.55))
+		for _, sd in ipairs({-1, 1}) do piece(Vector3.new(0.3, 1.1, HEAD.Z * 0.7), CFrame.new(sd * (HX + 0.14), -0.12, 0.05)) end
 	elseif style == "Bun" then
 		piece(Vector3.new(0.85, 0.85, 0.85), CFrame.new(0, HY + 0.35, 0.3), {shape = Enum.PartType.Ball})
 		attach(head, "HairStick", Vector3.new(0.08, 1.2, 0.08), CFrame.new(0.15, HY + 0.4, 0.3) * CFrame.Angles(0, 0, 0.9), GOLD, {parent = folder})
@@ -303,7 +305,12 @@ local function addOutfit(m: Model, def: any, L: any, rarityI: number)
 		attach(ra, "Orb", Vector3.new(0.75, 0.75, 0.75), CFrame.new(0, 1.95, -0.65), orb, {shape = Enum.PartType.Ball, mat = Enum.Material.Neon})
 		if L.female then
 			attach(head, "HatBrim", Vector3.new(0.12, 2.6, 2.6), CFrame.new(0, HY + 0.15, 0.05) * CFrame.Angles(0, 0, math.rad(90)), L.main:Lerp(DARK, 0.35), {shape = Enum.PartType.Cylinder})
-			attach(head, "HatCone", Vector3.new(1.4, 1.6, 1.4), CFrame.new(0, HY + 0.95, 0.15) * CFrame.Angles(math.rad(-10), 0, 0), L.main:Lerp(DARK, 0.35), {cls = "WedgePart"})
+			local hc = L.main:Lerp(DARK, 0.35)
+			for k = 0, 3 do
+				local w = 1.35 - k * 0.32
+				attach(head, "HatCone", Vector3.new(w, 0.5, w), CFrame.new(0, HY + 0.45 + k * 0.42, 0.1 + k * 0.12) * CFrame.Angles(math.rad(-8 - k * 8), 0, 0), hc)
+			end
+			attach(head, "HatBand", Vector3.new(1.4, 0.16, 1.4), CFrame.new(0, HY + 0.32, 0.1), L.trim)
 		else
 			attach(head, "Hood", Vector3.new(HEAD.X + 0.4, 0.4, HEAD.Z + 0.4), CFrame.new(0, HY + 0.1, 0.12), L.second)
 		end
@@ -424,7 +431,8 @@ function Factory.Aura(m: Model, rarity: string)
 	end
 	if r.i >= 6 and head then
 		-- floating halo ring + crackling sparks
-		local halo = attach(head, "Halo", Vector3.new(0.12, 1.5, 1.5), CFrame.new(0, HEAD.Y / 2 + 0.9, 0.1) * CFrame.Angles(0, 0, math.rad(90)), secret and hx("FFF4B0") or col,
+		local top = (m:GetAttribute("HairTop") :: number?) or 0.6
+		local halo = attach(head, "Halo", Vector3.new(0.14, 1.7, 1.7), CFrame.new(0, HEAD.Y / 2 + top + 0.45, 0.15) * CFrame.Angles(0, 0, math.rad(90)), secret and hx("FFF4B0") or col,
 			{shape = Enum.PartType.Cylinder, mat = Enum.Material.Neon, trans = 0.15, parent = folder, shadow = false})
 		halo.Parent = folder
 		emitter(torso, {tex = TEX.spark, color = Color3.new(1, 1, 1), rate = 14, size = 0.5, life = 0.35, speed = 9, shape = Enum.ParticleEmitterShape.Box})
@@ -433,8 +441,8 @@ function Factory.Aura(m: Model, rarity: string)
 		-- wings + rainbow light
 		for _, s in ipairs({-1, 1}) do
 			for k = 0, 2 do
-				local w = attach(torso, "Wing", Vector3.new(0.1, 1.9 - k * 0.35, 2.4 - k * 0.45), CFrame.new(s * (1.1 + k * 0.5), 0.4 - k * 0.25, 0.85) * CFrame.Angles(0, math.rad(s * 30), math.rad(s * (-20 - k * 18))),
-					hx("FFFFFF"):Lerp(hx("C8E8FF"), k * 0.3), {cls = "WedgePart", mat = Enum.Material.Neon, trans = 0.25 + k * 0.1, parent = folder, shadow = false})
+				local w = attach(torso, "Wing", Vector3.new(0.12, 3.2 - k * 0.6, 3.4 - k * 0.7), CFrame.new(s * (1.5 + k * 0.9), 0.9 - k * 0.45, 0.95) * CFrame.Angles(0, math.rad(s * 25), math.rad(s * (-25 - k * 20))),
+					hx("FFF4B0"):Lerp(hx("9BE8FF"), k * 0.45), {cls = "WedgePart", mat = Enum.Material.Neon, trans = 0.1 + k * 0.12, parent = folder, shadow = false})
 				w.Parent = folder
 			end
 		end
