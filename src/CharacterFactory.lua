@@ -470,6 +470,8 @@ function Factory.Build(def: any, opts: any?): Model
 		for _, p in ipairs(m:GetChildren()) do if p:IsA("BasePart") then p.Transparency = 1 end end
 		local body = src:Clone()
 		body.Name = "MeshBody"
+		-- generated models keep the rotation they were made with; identity pivot = facing -Z like the rig
+		body:PivotTo(CFrame.new(body:GetPivot().Position))
 		local main = body:IsA("BasePart") and body or body:FindFirstChildWhichIsA("BasePart", true)
 		if body:IsA("Model") then
 			local _, sz = body:GetBoundingBox()
